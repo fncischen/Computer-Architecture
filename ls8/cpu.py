@@ -6,6 +6,11 @@ LDI = 0b10000010
 PRN = 0b01000111
 EXIT = 0b00000001
 NOTHING = 0b00000000
+MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
+
+print("LDI", LDI)
 
 class CPU:
     """Main CPU class."""
@@ -17,6 +22,7 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.reg[7] = 0xF4
         # self.ir = ""
         # self.mar = ""
         # self.mdr = ""
@@ -30,18 +36,18 @@ class CPU:
         # For now, we've just hardcoded a program:
 
         # these are our instructions we want to implement on this address
-        # program = [
-        #     # From print8.ls8
-        #     0b10000010, # LDI R0,8
-        #     0b00000000,
-        #     0b00001000,
-        #     0b01000111, # PRN R0
-        #     0b00000000,
-        #     0b00000001, # HLT
-        # ]
+        program = [
+            # From print8.ls8
+            0b10000010, # LDI R0,8
+            0b00000000,
+            0b00001000,
+            0b01000111, # PRN R0
+            0b00000000,
+            0b00000001, # HLT
+        ]
         program = []
 
-        if sys.argv[1] == "examples/mult.ls8":
+        if sys.argv[1]:
             filepath = sys.argv[1]
             with open(filepath) as f:
                 for line in f:
@@ -53,12 +59,22 @@ class CPU:
                     
                     x = int(num,2)
                     program.append(x)
-            
-            for instruction in program:
-                self.ram[address] = instruction
-                address += 1
+        
+            print("What our ram is now", self.ram)
         else:
-            print("We need a second program to run")
+            program = [
+            # From print8.ls8
+            0b10000010, # LDI R0,8
+            0b00000000,
+            0b00001000,
+            0b01000111, # PRN R0
+            0b00000000,
+            0b00000001, # HLT
+            ] 
+
+        for instruction in program:
+            self.ram[address] = instruction
+            address += 1
 
 
     def alu(self, op, reg_a, reg_b):
@@ -66,7 +82,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "MULT": 
+            print("multiply")
+            self.reg[reg_a] *= self.reg[reg_b]
+            print(self.reg)
         else:
             raise Exception("Unsupported ALU operation")
     def ram_read(self, address):
@@ -96,34 +115,59 @@ class CPU:
 
         print()
 
-    def prn(self):
-        s = [str(i) for i in self.reg]
-        integer = int("".join(s))
-        print(bin(integer)) 
-
-    def ldi(self, reg, num):
-        print(reg, num)
-        self.reg[reg-1] = num
-
     def run(self):
         running = True
+        sysStartingPoint = self.reg[7]
+        sysStackPointer = self.reg[7]
+        print("sys stack pointer", sysStackPointer)
         while running:
             command = self.ram_read(self.pc)
+
+            operandA = self.ram_read(self.pc+1)
+            operandB = self.ram_read(self.pc+2)
+
             # check all possible commands
             if command == LDI:
-                num = self.ram_read(self.pc + 1)
-                reg = self.ram_read(self.pc + 2)
-                self.ldi(reg, num)
+                self.reg[operandA] = operandB
                 self.pc += 3
             elif command == PRN:
-                self.prn()
-                self.pc += 1
+                print("print register value at", self.reg[operandA])
+                self.pc += 2
             elif command == EXIT:
                 print("exiting system!")
                 sys.exit(1)
             elif command == NOTHING:
                 print("Do nothing")
                 self.pc += 1
+            elif command == MUL:
+                self.alu("MULT", operandA,operandB)
+                self.pc += 3
+            elif command == PUSH:
+                if sysStackPointer < len(self.ram):
+                    print("writing")
+                    self.ram_write(sysStackPointer, operandA)
+                    print(self.ram[sysStackPointer], "at", sysStackPointer)
+                    sysStackPointer -= 1
+                    self.pc += 2
+                else:
+                    print("System Stack full")
+                    self.pc += 1
+                print(self.ram)
+            elif command == POP:
+                if sysStackPointer < len(self.ram):
+                    self.ram_write(sysStackPointer, 0)
+                    sysStackPointer += 1
+                    self.pc += 2
+                else:
+                    print("there is nothing else to pop")
+                    self.pc += 1
+                print(self.ram)
+
+
+            else:
+                "Go to next step"
+                self.pc += 1
+                pass
 
     
         
