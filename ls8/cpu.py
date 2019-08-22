@@ -11,6 +11,7 @@ PUSH = 0b01000101
 POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
+HLT = 0b00000001 
 
 print("LDI", LDI)
 
@@ -122,9 +123,11 @@ class CPU:
         sysStackPointer = self.reg[7]
         print("sys stack pointer", sysStackPointer)
         
+        print("our ram", self.ram)
         while running:
             command = self.ram_read(self.pc)
-
+            # print("counter", self.pc)
+            # print("command", command)
             operandA = self.ram_read(self.pc+1)
             operandB = self.ram_read(self.pc+2)
 
@@ -145,13 +148,19 @@ class CPU:
                 self.alu("MULT", operandA,operandB)
                 self.pc += 3
             elif command == PUSH:
+                print("check register b4 pushing", self.reg)
+                print("operandA", operandA)
                 value = self.reg[operandA]
+                print("value", value)
                 sysStackPointer -= 1
                 self.ram_write(sysStackPointer, value)
                 self.pc += 2
             elif command == POP:
                 if sysStackPointer < len(self.ram):
+                    print("popping at", operandA)
+                    print("checking register before popping", self.reg)
                     self.reg[operandA] = self.ram_read(sysStackPointer)
+                    print("checking register after popping", self.reg)
                     sysStackPointer += 1
                     self.pc += 2
                 else:
@@ -159,13 +168,18 @@ class CPU:
                     self.pc += 1
                 print(self.ram)
             elif command == CALL:
+                returnAdd = self.pc + 2
                 self.pc = self.reg[operandA]
+                # print("check operandA", operandA)
+                # print("check register", self.reg)
                 sysStackPointer -= 1
-                self.ram_write(sysStackPointer, operandB)
+                self.ram_write(sysStackPointer, returnAdd)
+                # print("store OPB", operandB, "at", sysStackPointer)
 
             elif command == RET:
                 if sysStackPointer < len(self.ram):
                     returnAddress = self.ram_read(sysStackPointer)
+                    # print("head to return address", returnAddress)
                     sysStackPointer += 1
                     # go back to the next PC counter
                     self.pc = returnAddress
