@@ -9,6 +9,8 @@ NOTHING = 0b00000000
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
 
 print("LDI", LDI)
 
@@ -60,7 +62,6 @@ class CPU:
                     x = int(num,2)
                     program.append(x)
         
-            print("What our ram is now", self.ram)
         else:
             program = [
             # From print8.ls8
@@ -120,6 +121,7 @@ class CPU:
         sysStartingPoint = self.reg[7]
         sysStackPointer = self.reg[7]
         print("sys stack pointer", sysStackPointer)
+        
         while running:
             command = self.ram_read(self.pc)
 
@@ -162,12 +164,31 @@ class CPU:
                     print("there is nothing else to pop")
                     self.pc += 1
                 print(self.ram)
+            elif command == CALL:
+                # call a specific function, specific address 
+                # in the ram
+                if sysStackPointer < len(self.ram):
+                    self.ram_write(sysStackPointer, operandB)
+                    sysStackPointer -= 1
+                else:
+                    print("System Stack full")
 
+                self.pc = operandA
+            elif command == RET:
+                if sysStackPointer < len(self.ram):
+                    returnAddress = self.ram_read(sysStackPointer)
+                    self.ram_write(sysStackPointer, 0)
+
+                    # go back to the next PC counter
+                    self.pc = returnAddress
+
+                    sysStackPointer += 1
+                else:
+                    print("there is nothing else to pop")
 
             else:
                 "Go to next step"
                 self.pc += 1
                 pass
-
     
         
