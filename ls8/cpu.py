@@ -12,6 +12,7 @@ POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
 HLT = 0b00000001 
+ADD = 0b10100000
 
 print("LDI", LDI)
 
@@ -123,7 +124,7 @@ class CPU:
         sysStackPointer = self.reg[7]
         print("sys stack pointer", sysStackPointer)
         
-        print("our ram", self.ram)
+        # print("our ram", self.ram)
         while running:
             command = self.ram_read(self.pc)
             # print("counter", self.pc)
@@ -142,31 +143,34 @@ class CPU:
                 print("exiting system!")
                 sys.exit(1)
             elif command == NOTHING:
-                print("Do nothing")
+                # print("Do nothing")
                 self.pc += 1
+            elif command == ADD:
+                self.alu("ADD", operandA,operandB)
+                self.pc += 3
             elif command == MUL:
                 self.alu("MULT", operandA,operandB)
                 self.pc += 3
             elif command == PUSH:
-                print("check register b4 pushing", self.reg)
-                print("operandA", operandA)
+                # print("check register b4 pushing", self.reg)
+                # print("operandA", operandA)
                 value = self.reg[operandA]
-                print("value", value)
+                # print("value", value)
                 sysStackPointer -= 1
                 self.ram_write(sysStackPointer, value)
                 self.pc += 2
             elif command == POP:
                 if sysStackPointer < len(self.ram):
-                    print("popping at", operandA)
-                    print("checking register before popping", self.reg)
+                    # print("popping at", operandA)
+                    # print("checking register before popping", self.reg)
                     self.reg[operandA] = self.ram_read(sysStackPointer)
-                    print("checking register after popping", self.reg)
+                    # print("checking register after popping", self.reg)
                     sysStackPointer += 1
                     self.pc += 2
                 else:
                     print("there is nothing else to pop")
                     self.pc += 1
-                print(self.ram)
+                # print(self.ram)
             elif command == CALL:
                 returnAdd = self.pc + 2
                 self.pc = self.reg[operandA]
