@@ -145,19 +145,13 @@ class CPU:
                 self.alu("MULT", operandA,operandB)
                 self.pc += 3
             elif command == PUSH:
-                if sysStackPointer < len(self.ram):
-                    print("writing")
-                    self.ram_write(sysStackPointer, operandA)
-                    print(self.ram[sysStackPointer], "at", sysStackPointer)
-                    sysStackPointer -= 1
-                    self.pc += 2
-                else:
-                    print("System Stack full")
-                    self.pc += 1
-                print(self.ram)
+                value = self.reg[operandA]
+                sysStackPointer -= 1
+                self.ram_write(sysStackPointer, value)
+                self.pc += 2
             elif command == POP:
                 if sysStackPointer < len(self.ram):
-                    self.ram_write(sysStackPointer, 0)
+                    self.reg[operandA] = self.ram_read(sysStackPointer)
                     sysStackPointer += 1
                     self.pc += 2
                 else:
@@ -165,24 +159,16 @@ class CPU:
                     self.pc += 1
                 print(self.ram)
             elif command == CALL:
-                # call a specific function, specific address 
-                # in the ram
-                if sysStackPointer < len(self.ram):
-                    self.ram_write(sysStackPointer, operandB)
-                    sysStackPointer -= 1
-                else:
-                    print("System Stack full")
+                self.pc = self.reg[operandA]
+                sysStackPointer -= 1
+                self.ram_write(sysStackPointer, operandB)
 
-                self.pc = operandA
             elif command == RET:
                 if sysStackPointer < len(self.ram):
                     returnAddress = self.ram_read(sysStackPointer)
-                    self.ram_write(sysStackPointer, 0)
-
+                    sysStackPointer += 1
                     # go back to the next PC counter
                     self.pc = returnAddress
-
-                    sysStackPointer += 1
                 else:
                     print("there is nothing else to pop")
 
